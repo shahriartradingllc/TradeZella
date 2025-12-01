@@ -1,82 +1,63 @@
-import { useEffect, useState } from "react";
-import { auth, db } from "../lib/firebase";
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
-import { collection, addDoc, query, onSnapshot } from "firebase/firestore";
+import React from "react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function Dashboard() {
-  const [user, setUser] = useState(null);
-  const [trades, setTrades] = useState([]);
-  const provider = new GoogleAuthProvider();
-
-  useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, (u) => setUser(u));
-    return () => unsubAuth();
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    const q = query(collection(db, "trades_" + user.uid));
-    const unsub = onSnapshot(q, (snap) => {
-      setTrades(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-    return () => unsub();
-  }, [user]);
-
-  const handleLogin = async () => {
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (err) {
-      console.error("Login error", err);
-      alert("Login failed: " + err.message);
-    }
-  };
-
-  const handleAddTrade = async () => {
-    if (!user) return alert("Please sign in first");
-    try {
-      await addDoc(collection(db, "trades_" + user.uid), {
-        createdAt: new Date().toISOString(),
-        symbol: "AAPL",
-        qty: 1,
-        note: "sample trade"
-      });
-    } catch (err) {
-      console.error(err);
-      alert("Failed to add trade");
-    }
-  };
+  const sampleData = [
+    { day: "Mon", pnl: 120 },
+    { day: "Tue", pnl: -50 },
+    { day: "Wed", pnl: 200 },
+    { day: "Thu", pnl: -80 },
+    { day: "Fri", pnl: 150 }
+  ];
 
   return (
-    <div className="min-h-screen container mx-auto px-6 py-8">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Dashboard</h2>
-        <div>
-          {user ? (
-            <>
-              <span className="mr-4">Hi, {user.displayName}</span>
-              <button className="px-3 py-1 border rounded" onClick={() => signOut(auth)}>Sign out</button>
-            </>
-          ) : (
-            <button className="px-3 py-1 bg-indigo-600 text-white rounded" onClick={handleLogin}>Sign in with Google</button>
-          )}
+    <div className="min-h-screen bg-gray-100 p-6">
+      {/* Top Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="bg-white p-6 rounded-2xl shadow">
+          <h2 className="text-sm text-gray-500">Total Trades</h2>
+          <p className="text-3xl font-bold mt-2">124</p>
+        </div>
+        <div className="bg-white p-6 rounded-2xl shadow">
+          <h2 className="text-sm text-gray-500">Win Rate</h2>
+          <p className="text-3xl font-bold mt-2">62%</p>
+        </div>
+        <div className="bg-white p-6 rounded-2xl shadow">
+          <h2 className="text-sm text-gray-500">Net PnL</h2>
+          <p className="text-3xl font-bold mt-2 text-green-600">+$1,240</p>
         </div>
       </div>
 
-      <div className="mt-6">
-        <button className="px-4 py-2 bg-green-500 text-white rounded" onClick={handleAddTrade}>Add sample trade</button>
+      {/* Chart Section */}
+      <div className="bg-white p-6 rounded-2xl shadow mb-6">
+        <h2 className="text-lg font-semibold mb-4">Weekly Performance</h2>
+        <div className="w-full h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={sampleData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="day" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="pnl" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
-      <div className="mt-6">
-        <h3 className="font-semibold">Your Trades</h3>
-        <ul className="mt-2">
-          {trades.map(t => (
-            <li key={t.id} className="border p-3 rounded my-2">
-              <div><strong>{t.symbol}</strong> — {t.qty} — {new Date(t.createdAt).toLocaleString()}</div>
-              <div className="text-sm text-gray-600">{t.note}</div>
-            </li>
+      {/* Trades List */}
+      <div className="bg-white p-6 rounded-2xl shadow">
+        <h2 className="text-lg font-semibold mb-4">Recent Trades</h2>
+        <div className="space-y-3">
+          {[1, 2, 3].map((t) => (
+            <div key={t} className="p-4 border rounded-xl flex justify-between items-center">
+              <div>
+                <p className="font-medium">AAPL</p>
+                <p className="text-sm text-gray-500">Long • 2.1R</p>
+              </div>
+              <p className="font-bold text-green-600">+$120</p>
+            </div>
           ))}
-          {trades.length === 0 && <li className="text-gray-500">No trades yet.</li>}
-        </ul>
+        </div>
       </div>
     </div>
   );
