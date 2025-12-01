@@ -1,0 +1,2 @@
+# TradeZella
+Educational Purposes
